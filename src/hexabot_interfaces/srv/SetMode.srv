@@ -1,0 +1,5 @@
+# stand | sit | crouch | normal | relax
+string mode
+---
+bool success
+string message

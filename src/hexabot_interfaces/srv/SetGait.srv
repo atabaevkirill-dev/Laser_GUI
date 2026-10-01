@@ -1,0 +1,5 @@
+# tripod | ripple | wave
+string gait
+---
+bool success
+string message

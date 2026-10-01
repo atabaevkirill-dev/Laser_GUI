@@ -1,0 +1,6 @@
+# 0 keeps the current mode, otherwise LrfMeasurement.TARGET_*
+uint8 target_mode
+---
+bool success
+string message
+hexabot_interfaces/LrfMeasurement measurement
