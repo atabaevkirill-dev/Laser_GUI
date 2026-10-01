@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <material name="printed"><color rgba="0.23 0.25 0.24 1"/></material>
+  <material name="accent"><color rgba="0.85 0.28 0.06 1"/></material>
+  <material name="servo"><color rgba="0.08 0.09 0.09 1"/></material>
+  <material name="electronics"><color rgba="0.12 0.36 0.23 1"/></material>
+  <material name="sensor"><color rgba="0.17 0.19 0.21 1"/></material>
+  <material name="payload"><color rgba="0.14 0.15 0.17 1"/></material>
+  <material name="rubber"><color rgba="0.05 0.05 0.05 1"/></material>
+
+  <!-- Visual from a CAD mesh (millimetres) in the link frame. -->
+  <xacro:macro name="mesh_visual" params="name material">
+    <visual>
+      <geometry><mesh filename="${mesh_dir}/${name}.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name="${material}"/>
+    </visual>
+  </xacro:macro>
+
+  <!-- Solid box inertia, optionally offset. -->
+  <xacro:macro name="box_inertial" params="mass x y z ox:=0 oy:=0 oz:=0">
+    <inertial>
+      <origin xyz="${ox} ${oy} ${oz}"/>
+      <mass value="${mass}"/>
+      <inertia ixx="${mass * (y*y + z*z) / 12}" ixy="0" ixz="0"
+               iyy="${mass * (x*x + z*z) / 12}" iyz="0"
+               izz="${mass * (x*x + y*y) / 12}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- Camera optical frame: z forward, x right, y down. -->
+  <xacro:macro name="optical_frame" params="parent">
+    <joint name="${parent}_optical_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${parent}_optical_frame"/>
+      <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+    </joint>
+    <link name="${parent}_optical_frame"/>
+  </xacro:macro>
+</robot>

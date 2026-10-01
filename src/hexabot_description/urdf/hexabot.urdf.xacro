@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<!-- Hexabot scout hexapod.  Geometry comes from config/geometry.yaml, which
+     cad/params.py generates together with the meshes (do not edit by hand). -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="hexabot">
+  <xacro:arg name="use_sim" default="false"/>
+  <xacro:arg name="use_mock_hardware" default="false"/>
+  <xacro:arg name="simulated_bus" default="false"/>
+  <xacro:arg name="servo_port" default="/dev/ttyUSB0"/>
+  <xacro:arg name="servo_baudrate" default="1000000"/>
+  <xacro:arg name="geometry_file" default="$(find hexabot_description)/config/geometry.yaml"/>
+  <xacro:arg name="calibration_file" default="$(find hexabot_description)/config/servo_calibration.yaml"/>
+  <xacro:arg name="controllers_file" default=""/>
+
+  <xacro:property name="geo"
+    value="${xacro.load_yaml('$(arg geometry_file)')['/**']['ros__parameters']['geometry']}"/>
+  <xacro:property name="calib" value="${xacro.load_yaml('$(arg calibration_file)')}"/>
+  <xacro:property name="mesh_dir" value="package://hexabot_description/meshes/visual"/>
+
+  <xacro:include filename="$(find hexabot_description)/urdf/common.xacro"/>
+  <xacro:include filename="$(find hexabot_description)/urdf/leg.xacro"/>
+  <xacro:include filename="$(find hexabot_description)/urdf/head.xacro"/>
+  <xacro:include filename="$(find hexabot_description)/urdf/sensors.xacro"/>
+  <xacro:include filename="$(find hexabot_description)/urdf/hexabot.ros2_control.xacro"/>
+  <xacro:include filename="$(find hexabot_description)/urdf/hexabot.gazebo.xacro"/>
+
+  <!-- base_link: body centre on the femur-axis plane.  The locomotion node
+       publishes base_footprint -> base_link (body height and pose). -->
+  <link name="base_link">
+    <xacro:mesh_visual name="base_printed" material="printed"/>
+    <xacro:mesh_visual name="base_servos" material="servo"/>
+    <xacro:mesh_visual name="base_electronics" material="electronics"/>
+    <xacro:mesh_visual name="base_sensors" material="sensor"/>
+    <collision>
+      <origin xyz="0 0 0.005"/>
+      <geometry><box size="0.26 0.17 0.045"/></geometry>
+    </collision>
+    <xacro:box_inertial mass="${geo['mass_base']}" x="0.26" y="0.2" z="0.06" oz="0.01"/>
+  </link>
+
+  <xacro:leg name="lf" index="0"/>
+  <xacro:leg name="lm" index="1"/>
+  <xacro:leg name="lr" index="2"/>
+  <xacro:leg name="rf" index="3"/>
+  <xacro:leg name="rm" index="4"/>
+  <xacro:leg name="rr" index="5"/>
+
+  <xacro:head/>
+  <xacro:body_sensors/>
+
+  <xacro:hexabot_ros2_control
+    use_sim="$(arg use_sim)" use_mock_hardware="$(arg use_mock_hardware)"
+    simulated_bus="$(arg simulated_bus)" port="$(arg servo_port)" baudrate="$(arg servo_baudrate)"/>
+
+  <xacro:if value="$(arg use_sim)">
+    <xacro:hexabot_gazebo controllers_file="$(arg controllers_file)"/>
+  </xacro:if>
+</robot>

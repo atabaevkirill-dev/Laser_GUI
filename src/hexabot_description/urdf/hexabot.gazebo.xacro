@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- Gazebo (Harmonic) plugins and sensors.  Topics are bridged to ROS by
+       hexabot_gazebo/config/bridge.yaml. -->
+  <xacro:macro name="foot_friction" params="leg">
+    <gazebo reference="${leg}_tibia_link">
+      <mu1>1.4</mu1>
+      <mu2>1.4</mu2>
+      <kp>200000.0</kp>
+      <kd>50.0</kd>
+      <min_depth>0.0005</min_depth>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="hexabot_gazebo" params="controllers_file">
+    <gazebo>
+      <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+        <parameters>${controllers_file}</parameters>
+      </plugin>
+    </gazebo>
+
+    <xacro:foot_friction leg="lf"/>
+    <xacro:foot_friction leg="lm"/>
+    <xacro:foot_friction leg="lr"/>
+    <xacro:foot_friction leg="rf"/>
+    <xacro:foot_friction leg="rm"/>
+    <xacro:foot_friction leg="rr"/>
+
+    <!-- LD19 / STL-19P 2D lidar -->
+    <gazebo reference="laser_link">
+      <sensor name="lidar" type="gpu_lidar">
+        <topic>scan</topic>
+        <gz_frame_id>laser_link</gz_frame_id>
+        <update_rate>10</update_rate>
+        <always_on>1</always_on>
+        <lidar>
+          <scan>
+            <horizontal><samples>456</samples><min_angle>-3.14159</min_angle><max_angle>3.14159</max_angle></horizontal>
+          </scan>
+          <range><min>0.06</min><max>12.0</max><resolution>0.01</resolution></range>
+          <noise><type>gaussian</type><mean>0.0</mean><stddev>0.01</stddev></noise>
+        </lidar>
+      </sensor>
+    </gazebo>
+
+    <!-- Depth camera (RGB-D) looking forward and down -->
+    <gazebo reference="depth_camera_color_frame">
+      <sensor name="depth_camera" type="rgbd_camera">
+        <topic>depth_camera</topic>
+        <gz_frame_id>depth_camera_color_optical_frame</gz_frame_id>
+        <update_rate>15</update_rate>
+        <always_on>1</always_on>
+        <camera>
+          <horizontal_fov>1.5</horizontal_fov>
+          <image><width>424</width><height>240</height><format>R8G8B8</format></image>
+          <clip><near>0.1</near><far>12.0</far></clip>
+          <depth_camera><clip><near>0.15</near><far>10.0</far></clip></depth_camera>
+        </camera>
+      </sensor>
+    </gazebo>
+
+    <gazebo reference="imu_link">
+      <sensor name="imu" type="imu">
+        <topic>imu</topic>
+        <gz_frame_id>imu_link</gz_frame_id>
+        <update_rate>100</update_rate>
+        <always_on>1</always_on>
+      </sensor>
+    </gazebo>
+
+    <gazebo reference="gnss_link">
+      <sensor name="navsat" type="navsat">
+        <topic>navsat</topic>
+        <gz_frame_id>gnss_link</gz_frame_id>
+        <update_rate>5</update_rate>
+        <always_on>1</always_on>
+      </sensor>
+    </gazebo>
+
+    <!-- Head: low-light aiming camera, thermal core and the LRF beam -->
+    <gazebo reference="lowlight_camera_link">
+      <sensor name="lowlight_camera" type="camera">
+        <topic>lowlight_camera/image_raw</topic>
+        <gz_frame_id>lowlight_camera_link_optical_frame</gz_frame_id>
+        <update_rate>15</update_rate>
+        <always_on>1</always_on>
+        <camera>
+          <horizontal_fov>0.454</horizontal_fov>
+          <image><width>640</width><height>480</height><format>R8G8B8</format></image>
+          <clip><near>0.05</near><far>800</far></clip>
+        </camera>
+      </sensor>
+    </gazebo>
+
+    <gazebo reference="thermal_camera_link">
+      <sensor name="thermal_camera" type="thermal">
+        <topic>thermal_camera/image_raw</topic>
+        <gz_frame_id>thermal_camera_link_optical_frame</gz_frame_id>
+        <update_rate>9</update_rate>
+        <always_on>1</always_on>
+        <camera>
+          <horizontal_fov>0.977</horizontal_fov>
+          <image><width>256</width><height>192</height><format>L16</format></image>
+          <clip><near>0.1</near><far>300</far></clip>
+        </camera>
+      </sensor>
+    </gazebo>
+
+    <gazebo reference="lrf_link">
+      <sensor name="lrf" type="gpu_lidar">
+        <topic>lrf/scan</topic>
+        <gz_frame_id>lrf_link</gz_frame_id>
+        <update_rate>10</update_rate>
+        <always_on>1</always_on>
+        <lidar>
+          <scan>
+            <horizontal><samples>1</samples><min_angle>0</min_angle><max_angle>0</max_angle></horizontal>
+          </scan>
+          <range><min>0.3</min><max>1000.0</max><resolution>0.1</resolution></range>
+        </lidar>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+</robot>

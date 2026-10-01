@@ -1,0 +1,27 @@
+# Servo calibration of the STS3215 bus.
+#   id         bus address (factory default is 1: give every servo its own id
+#              with `ros2 run hexabot_hardware sts_tool set-id OLD NEW`)
+#   direction  +1 if the servo position grows with the joint angle, -1 otherwise
+#   offset     joint angle (rad) at servo position 2048; measure with
+#              `ros2 run hexabot_hardware sts_tool calibrate` after assembly
+servos:
+  lf_coxa_joint: {id: 1, direction: 1, offset: 0.0}
+  lf_femur_joint: {id: 2, direction: -1, offset: 0.0}
+  lf_tibia_joint: {id: 3, direction: -1, offset: 0.0}
+  lm_coxa_joint: {id: 4, direction: 1, offset: 0.0}
+  lm_femur_joint: {id: 5, direction: -1, offset: 0.0}
+  lm_tibia_joint: {id: 6, direction: -1, offset: 0.0}
+  lr_coxa_joint: {id: 7, direction: 1, offset: 0.0}
+  lr_femur_joint: {id: 8, direction: -1, offset: 0.0}
+  lr_tibia_joint: {id: 9, direction: -1, offset: 0.0}
+  rf_coxa_joint: {id: 10, direction: 1, offset: 0.0}
+  rf_femur_joint: {id: 11, direction: -1, offset: 0.0}
+  rf_tibia_joint: {id: 12, direction: -1, offset: 0.0}
+  rm_coxa_joint: {id: 13, direction: 1, offset: 0.0}
+  rm_femur_joint: {id: 14, direction: -1, offset: 0.0}
+  rm_tibia_joint: {id: 15, direction: -1, offset: 0.0}
+  rr_coxa_joint: {id: 16, direction: 1, offset: 0.0}
+  rr_femur_joint: {id: 17, direction: -1, offset: 0.0}
+  rr_tibia_joint: {id: 18, direction: -1, offset: 0.0}
+  head_pan_joint: {id: 19, direction: 1, offset: 0.0}
+  head_tilt_joint: {id: 20, direction: -1, offset: 0.0}
