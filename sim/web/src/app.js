@@ -46,9 +46,14 @@ function parseSTL(buffer) {
 }
 
 async function loadAssets() {
-  const [geoRes, meshRes] = await Promise.all([fetch('geometry.json'), fetch('meshes.json')]);
-  if (!geoRes.ok || !meshRes.ok) throw new Error('geometry.json or meshes.json is missing (run build.mjs)');
+  const [geoRes, meshRes, courseRes] = await Promise.all([fetch('geometry.json'), fetch('meshes.json'), fetch('course.json')]);
+  if (!geoRes.ok || !meshRes.ok || !courseRes.ok) throw new Error('geometry.json, meshes.json or course.json is missing (run build.mjs)');
   const geoJson = await geoRes.json();
+  COURSE = await courseRes.json();
+  OBSTACLES = COURSE.obstacles;
+  RAMPS = COURSE.ramps;
+  PATROL = COURSE.patrol;
+  ZONE = COURSE.zone;
   const pack = await meshRes.json();
   const meshes = {};
   for (const name of MESHES) {
@@ -65,24 +70,13 @@ async function loadAssets() {
 // Test range: terrain, obstacles and actors
 // ---------------------------------------------------------------------------
 
-// Boxes the feet stand on (h above ground).  Taller than the step limit = wall.
-const OBSTACLES = [
-  { kind: 'rock', x0: 1.05, x1: 1.2, y0: -0.35, y1: -0.22, h: 0.025 },
-  { kind: 'rock', x0: 1.4, x1: 1.62, y0: 0.12, y1: 0.3, h: 0.035 },
-  { kind: 'rock', x0: 1.85, x1: 1.98, y0: -0.12, y1: 0.02, h: 0.02 },
-  { kind: 'rock', x0: 2.1, x1: 2.3, y0: 0.28, y1: 0.44, h: 0.04 },
-  { kind: 'rock', x0: 2.25, x1: 2.38, y0: -0.4, y1: -0.28, h: 0.03 },
-  { kind: 'beam', x0: 3.2, x1: 3.32, y0: -1.2, y1: 1.2, h: 0.06 },
-  { kind: 'platform', x0: 4.6, x1: 6.4, y0: -1.0, y1: 1.0, h: 0.05 },
-  { kind: 'wall', x0: 7.6, x1: 7.85, y0: -2.0, y1: 2.0, h: 0.45 },
-  { kind: 'wall', x0: 9.0, x1: 12.4, y0: 4.2, y1: 4.45, h: 0.3 },
-];
-// Ramp along x: height rises from h0 at x0 to h1 at x1.
-const RAMPS = [
-  { x0: 9.0, x1: 10.2, y0: 2.0, y1: 3.6, h0: 0.0, h1: 0.1 },
-  { x0: 10.2, x1: 11.2, y0: 2.0, y1: 3.6, h0: 0.1, h1: 0.1 },
-  { x0: 11.2, x1: 12.4, y0: 2.0, y1: 3.6, h0: 0.1, h1: 0.0 },
-];
+// Course (obstacles, ramps, patrol, zone, actors) from sim/course.json, shared
+// with the Gazebo world.  Filled in loadAssets().
+let OBSTACLES = [];
+let RAMPS = [];
+let PATROL = [];
+let ZONE = { name: '', pts: [] };
+let COURSE = null;
 
 function terrainHeight(x, y) {
   let h = 0;
@@ -106,15 +100,6 @@ function blockedAt(x, y, r, groundHere, stepMax) {
   }
   return false;
 }
-
-const PATROL = [
-  { x: 2.7, y: 0.0 }, { x: 6.9, y: 0.0, observe: 'OP-1' }, { x: 7.25, y: 2.8 },
-  { x: 12.9, y: 2.8 }, { x: 13.6, y: 0.2, observe: 'OP-2' }, { x: 12.4, y: -3.0 },
-  { x: 6.0, y: -3.4 }, { x: 1.2, y: -2.4, observe: 'OP-3' }, { x: 0.0, y: 0.0 },
-];
-
-// Analytics zone (polygon on the ground) watched by the video analytics.
-const ZONE = { name: 'Zone A', pts: [[18, 22], [34, 22], [34, 36], [18, 36]] };
 
 function insidePolygon(x, y, pts) {
   let inside = false;
@@ -294,8 +279,8 @@ function buildWorld(scene) {
   const trunk = new THREE.MeshStandardMaterial({ color: 0x5b4733, roughness: 0.9 });
   const leaves = new THREE.MeshStandardMaterial({ color: 0x55663f, roughness: 0.9 });
   const trees = [];
-  const rnd = mulberry32(7);
-  for (let i = 0; i < 46; i++) {
+  const rnd = mulberry32(COURSE.trees_seed);
+  for (let i = 0; i < COURSE.trees_count; i++) {
     const a = rnd() * Math.PI * 2;
     const d = 16 + rnd() * 90;
     const x = Math.cos(a) * d + 20, y = Math.sin(a) * d;
@@ -594,15 +579,15 @@ async function main() {
   scene.add(selRing);
 
   // Actors.
+  const C = COURSE;
   const actors = [
-    new Actor('person', 'person', makePerson(0x4a5a72), [[34, -12], [36, 14], [30, 15], [28, -10]], 1.3),
-    new Actor('person', 'person', makePerson(0x8a4b3a), [[22, 24], [31, 33], [26, 40], [14, 30]], 1.1, { s0: 9 }),
-    new Actor('person', 'person', makePerson(0x5f6b3c), [[58, -30], [70, -18], [64, -4], [52, -16]], 1.4, { s0: 20 }),
-    new Actor('drone', 'drone', makeDrone(), { x: 26, y: 6, r: 22, alt: 24, phase: 0.5 }, 7),
+    ...C.people.map((p) => new Actor('person', 'person', makePerson(new THREE.Color(p.color).getHex()), p.path, p.speed, { s0: p.s0 || 0 })),
+    new Actor('drone', 'drone', makeDrone(), { x: C.drone.x, y: C.drone.y, r: C.drone.r, alt: C.drone.alt, phase: C.drone.phase }, C.drone.speed),
     new Actor('vehicle', 'vehicle', makeVehicle(), null, 0),
   ];
-  actors[4].pos.set(82, 24, 0);
-  actors[4].obj.rotation.z = 0.4;
+  const vehicle = actors[actors.length - 1];
+  vehicle.pos.set(C.vehicle.x, C.vehicle.y, 0);
+  vehicle.obj.rotation.z = C.vehicle.yaw;
   for (const a of actors) scene.add(a.obj);
 
   // Inset renderer for the head camera.

@@ -1,0 +1,31 @@
+# Xbox-style controller, SDL2 mapping used by the ROS 2 `joy` package.
+#   left stick      walk (forward / sideways)        hold LB = deadman
+#   right stick     turn / body pitch                hold RB = fast
+#   D-pad           head pan / tilt (manual head)
+#   A stand/sit     B crouch (stealth)     X next gait     Y IR illuminator
+#   START           laser rangefinder: measure where the head points
+#   BACK            next target for auto-tracking (cycles through tracks)
+teleop:
+  ros__parameters:
+    axis_forward: 1
+    axis_sideways: 0
+    axis_turn: 2
+    axis_pitch: 3
+    button_deadman: 9
+    button_fast: 10
+    button_stand: 0
+    button_crouch: 1
+    button_gait: 2
+    button_illuminator: 3
+    button_measure: 6
+    button_next_target: 4
+    button_dpad_up: 11
+    button_dpad_down: 12
+    button_dpad_left: 13
+    button_dpad_right: 14
+    max_forward: 0.12
+    max_sideways: 0.08
+    max_turn: 0.6
+    fast_factor: 1.6
+    max_pitch: 0.2
+    head_rate: 0.8

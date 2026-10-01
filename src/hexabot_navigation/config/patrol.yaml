@@ -1,0 +1,15 @@
+# Patrol route (map frame) used by hexabot_behaviors.  Matches sim/course.json:
+# observation points (observe: true) make the robot crouch and scan with the head.
+patrol:
+  frame_id: map
+  loop: true
+  waypoints:
+    - {x: 2.7, y: 0.0, yaw: 0.0}
+    - {x: 6.9, y: 0.0, yaw: 0.0, observe: true, name: OP-1}
+    - {x: 7.25, y: 2.8, yaw: 1.57}
+    - {x: 12.9, y: 2.8, yaw: 0.0}
+    - {x: 13.6, y: 0.2, yaw: -1.57, observe: true, name: OP-2}
+    - {x: 12.4, y: -3.0, yaw: 3.14}
+    - {x: 6.0, y: -3.4, yaw: 3.14}
+    - {x: 1.2, y: -2.4, yaw: 2.4, observe: true, name: OP-3}
+    - {x: 0.0, y: 0.0, yaw: 0.0}

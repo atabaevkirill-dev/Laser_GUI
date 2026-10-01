@@ -168,6 +168,23 @@ public:
       });
     hw_client_ = create_client<SetHwState>("controller_manager/set_hardware_component_state");
 
+    param_cb_ = add_on_set_parameters_callback(
+      [this](const std::vector<rclcpp::Parameter> & params) {
+        rcl_interfaces::msg::SetParametersResult r;
+        r.successful = true;
+        for (const auto & p : params) {
+          if (p.get_name() == "publish_tf") {
+            publish_tf_ = p.as_bool();
+            RCLCPP_INFO(get_logger(), "odom TF %s", publish_tf_ ? "on" : "off (EKF)");
+          } else if (p.get_name() == "imu_leveling") {
+            leveling_ = p.as_bool();
+          } else if (p.get_name() == "auto_terrain") {
+            auto_terrain_ = p.as_bool();
+          }
+        }
+        return r;
+      });
+
     last_cmd_time_ = now();
     timer_ = create_wall_timer(
       std::chrono::duration<double>(1.0 / rate_), [this]() {tick();});
@@ -641,6 +658,7 @@ private:
   rclcpp::Service<SetMode>::SharedPtr mode_srv_;
   rclcpp::Client<SetHwState>::SharedPtr hw_client_;
   rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_;
 };
 
 }  // namespace hexabot_locomotion

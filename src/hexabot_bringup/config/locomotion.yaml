@@ -1,0 +1,29 @@
+# hexabot_locomotion node.  Geometry comes from hexabot_description/config/geometry.yaml.
+locomotion:
+  ros__parameters:
+    rate: 100.0
+    gait: tripod
+    max_stride: 0.08
+    linear_accel: 0.6
+    angular_accel: 2.5
+    tripod_cycle: 0.8
+    ripple_cycle: 1.05
+    wave_cycle: 1.4
+    body_height: 0.10
+    crouch_height: 0.065
+    sit_height: 0.03
+    transition_time: 1.5
+    # start_mode (wait | stand) is a launch argument of robot.launch.py.
+    command_timeout: 0.5
+    use_stamped_cmd_vel: false
+    # The EKF (hexabot_navigation) publishes odom -> base_footprint when it runs.
+    publish_tf: true
+    odom_from_joints: true
+    imu_leveling: true
+    leveling_gain: 0.8
+    fall_angle: 0.9
+    auto_terrain: true
+    # Servo load (N*m) on the tibia above which a foot counts as touching the
+    # ground; 0 disables adaptive touchdown.  Tune on the real robot.
+    contact_effort_threshold: 0.0
+    hardware_component: HexabotSystem
