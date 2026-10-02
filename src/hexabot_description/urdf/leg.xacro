@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- One leg: coxa (vertical axis), femur and tibia (axis -y, positive lifts).
+       Joint zero: femur horizontal, tibia perpendicular to it. -->
+  <xacro:macro name="leg" params="name index">
+    <xacro:property name="i" value="${int(index)}"/>
+    <xacro:property name="L1" value="${geo['coxa_length']}"/>
+    <xacro:property name="L2" value="${geo['femur_length']}"/>
+    <xacro:property name="L3" value="${geo['tibia_length']}"/>
+
+    <joint name="${name}_coxa_joint" type="revolute">
+      <parent link="base_link"/>
+      <child link="${name}_coxa_link"/>
+      <origin xyz="${geo['mount_x'][i]} ${geo['mount_y'][i]} 0" rpy="0 0 ${geo['mount_yaw'][i]}"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${geo['coxa_limits'][0]}" upper="${geo['coxa_limits'][1]}" effort="2.9" velocity="4.7"/>
+      <dynamics damping="0.05" friction="0.02"/>
+    </joint>
+    <link name="${name}_coxa_link">
+      <xacro:mesh_visual name="coxa_printed" material="printed"/>
+      <xacro:mesh_visual name="coxa_servo" material="servo"/>
+      <collision>
+        <origin xyz="${L1 - 0.004} 0 -0.008"/>
+        <geometry><box size="0.034 0.036 0.05"/></geometry>
+      </collision>
+      <xacro:box_inertial mass="${geo['mass_coxa']}" x="0.05" y="0.04" z="0.05" ox="${L1 - 0.006}" oz="-0.008"/>
+    </link>
+
+    <joint name="${name}_femur_joint" type="revolute">
+      <parent link="${name}_coxa_link"/>
+      <child link="${name}_femur_link"/>
+      <origin xyz="${L1} 0 0"/>
+      <axis xyz="0 -1 0"/>
+      <limit lower="${geo['femur_limits'][0]}" upper="${geo['femur_limits'][1]}" effort="2.9" velocity="4.7"/>
+      <dynamics damping="0.05" friction="0.02"/>
+    </joint>
+    <link name="${name}_femur_link">
+      <xacro:mesh_visual name="femur_printed" material="printed"/>
+      <xacro:mesh_visual name="femur_servo" material="servo"/>
+      <collision>
+        <origin xyz="${L2 * 0.62} 0 0"/>
+        <geometry><box size="${L2 * 0.8} 0.038 0.03"/></geometry>
+      </collision>
+      <xacro:box_inertial mass="${geo['mass_femur']}" x="${L2}" y="0.045" z="0.03" ox="${L2 * 0.62}"/>
+    </link>
+
+    <joint name="${name}_tibia_joint" type="revolute">
+      <parent link="${name}_femur_link"/>
+      <child link="${name}_tibia_link"/>
+      <origin xyz="${L2} 0 0"/>
+      <axis xyz="0 -1 0"/>
+      <limit lower="${geo['tibia_limits'][0]}" upper="${geo['tibia_limits'][1]}" effort="2.9" velocity="4.7"/>
+      <dynamics damping="0.05" friction="0.02"/>
+    </joint>
+    <link name="${name}_tibia_link">
+      <xacro:mesh_visual name="tibia_printed" material="printed"/>
+      <xacro:mesh_visual name="tibia_foot" material="rubber"/>
+      <collision>
+        <origin xyz="0 0 ${-L3 * 0.5}"/>
+        <geometry><cylinder radius="0.011" length="${L3 * 0.72}"/></geometry>
+      </collision>
+      <collision name="${name}_foot_collision">
+        <origin xyz="0 0 ${-L3 + 0.011}"/>
+        <geometry><sphere radius="0.011"/></geometry>
+      </collision>
+      <xacro:box_inertial mass="${geo['mass_tibia']}" x="0.024" y="0.04" z="${L3}" oz="${-L3 * 0.4}"/>
+    </link>
+
+    <!-- Contact point of the TPU foot. -->
+    <joint name="${name}_foot_joint" type="fixed">
+      <parent link="${name}_tibia_link"/>
+      <child link="${name}_foot_link"/>
+      <origin xyz="0 0 ${-L3}"/>
+    </joint>
+    <link name="${name}_foot_link"/>
+  </xacro:macro>
+</robot>

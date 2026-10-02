@@ -1,0 +1,317 @@
+<meta charset="utf-8">
+<title>Hexabot Scout</title>
+<meta name="description" content="Interactive 3D simulation of the Hexabot scout hexapod: the real ROS 2 gait, laser rangefinder, IR illuminator, night and thermal vision.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Saira+Semi+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: one-screen instrument console. Control rail | 3D range | sensor rail.
+   Below 1100px the rails become a tabbed sheet under the 3D view. */
+:root {
+  --bg: #e4e7e1;          /* survey stone */
+  --panel: #f3f4f0;
+  --panel-2: #eaece6;
+  --ink: #1b221e;
+  --muted: #5b655e;
+  --line: #c7cdc5;
+  --laser: #d9480f;       /* LRF / laser accent */
+  --teal: #0e7068;        /* selection, live */
+  --amber: #b7791f;       /* thermal / warning */
+  --ok: #2f7d3a;
+  --bad: #b42318;
+  --view-bg: #cfd6d0;
+  --shadow: 0 1px 0 rgba(27, 34, 30, .06);
+  --font-display: "Saira Semi Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1311; --panel: #151a17; --panel-2: #1b211d; --ink: #e2e7e1; --muted: #8e9a90;
+    --line: #2b332e; --laser: #ff7a3d; --teal: #33b3a6; --amber: #e0a43a; --ok: #58b368;
+    --bad: #f0645a; --view-bg: #1a201c; --shadow: 0 1px 0 rgba(0, 0, 0, .3); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1311; --panel: #151a17; --panel-2: #1b211d; --ink: #e2e7e1; --muted: #8e9a90;
+  --line: #2b332e; --laser: #ff7a3d; --teal: #33b3a6; --amber: #e0a43a; --ok: #58b368;
+  --bad: #f0645a; --view-bg: #1a201c; --shadow: 0 1px 0 rgba(0, 0, 0, .3); color-scheme: dark;
+}
+
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font: 13px/1.45 var(--font-body);
+  margin: 0; overflow: hidden;
+}
+* { box-sizing: border-box; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+.app {
+  height: 100%; display: grid; gap: 1px; background: var(--line);
+  grid-template-columns: 288px minmax(0, 1fr) 344px;
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "left view right";
+}
+.rail { background: var(--panel); overflow-y: auto; min-width: 0; padding: 14px 16px 24px; display: flex; flex-direction: column; gap: 18px; }
+.rail.left { grid-area: left; }
+.rail.right { grid-area: right; }
+.view { grid-area: view; position: relative; min-width: 0; min-height: 0; background: var(--view-bg); }
+.view canvas.main { display: block; width: 100%; height: 100%; touch-action: none; }
+
+.brand { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.brand h1 { font: 700 22px/1 var(--font-display); letter-spacing: .02em; margin: 0; text-wrap: balance; }
+.brand small { font: 500 11px var(--font-mono); color: var(--muted); }
+
+section h2 {
+  font: 600 12px/1 var(--font-display); text-transform: uppercase; letter-spacing: .12em;
+  color: var(--muted); margin: 0 0 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+section h2 .tag { font: 500 10px var(--font-mono); letter-spacing: 0; text-transform: none; color: var(--muted); }
+
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; background: transparent; padding: 7px 4px; cursor: pointer; font-weight: 500; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+
+.row { display: flex; align-items: center; gap: 10px; }
+.row + .row { margin-top: 8px; }
+.row label { flex: 0 0 92px; color: var(--muted); }
+.row input[type="range"] { flex: 1; min-width: 0; accent-color: var(--teal); }
+.row output { flex: 0 0 64px; text-align: right; font: 12px var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.btn {
+  border: 1px solid var(--line); background: var(--panel-2); border-radius: 6px; padding: 7px 10px;
+  cursor: pointer; text-align: left; display: flex; align-items: center; justify-content: space-between; gap: 6px;
+}
+.btn:hover { border-color: var(--muted); }
+.btn[aria-pressed="true"] { border-color: var(--teal); box-shadow: inset 3px 0 0 var(--teal); }
+.btn .key { font: 10px var(--font-mono); color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
+.btn.fire { background: var(--laser); color: #fff; border-color: transparent; justify-content: center; font-weight: 600; letter-spacing: .02em; }
+.btn.fire:hover { filter: brightness(1.06); }
+
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-variant-numeric: tabular-nums; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; text-align: right; font: 12px var(--font-mono); }
+
+.packet { font: 11px/1.5 var(--font-mono); background: var(--panel-2); border: 1px dashed var(--line); border-radius: 6px; padding: 7px 9px; overflow-x: auto; white-space: nowrap; }
+.packet b { color: var(--laser); font-weight: 500; }
+.packet span { color: var(--muted); }
+
+.hud {
+  position: absolute; left: 12px; top: 12px; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; max-width: calc(100% - 24px);
+}
+.chip {
+  font: 500 11px var(--font-mono); padding: 4px 8px; border-radius: 4px; background: rgba(15, 19, 17, .72); color: #e8ece6;
+  display: flex; gap: 6px; align-items: center; font-variant-numeric: tabular-nums;
+}
+.chip i { width: 7px; height: 7px; border-radius: 50%; background: #58b368; display: inline-block; }
+.chip.warn i { background: #e0a43a; }
+.chip.laser i { background: #ff7a3d; }
+
+.help {
+  position: absolute; left: 12px; bottom: 12px; font: 11px/1.6 var(--font-mono); color: #e8ece6;
+  background: rgba(15, 19, 17, .62); border-radius: 6px; padding: 6px 9px; pointer-events: none;
+}
+.help b { color: #fff; font-weight: 500; }
+
+.stick {
+  position: absolute; right: 16px; bottom: 16px; width: 112px; height: 112px; border-radius: 50%;
+  border: 1px solid rgba(232, 236, 230, .5); background: rgba(15, 19, 17, .35); touch-action: none; display: none;
+}
+.stick::after { content: ""; position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px; border-radius: 50%;
+  background: rgba(232, 236, 230, .85); transform: translate(var(--sx, 0px), var(--sy, 0px)); }
+@media (pointer: coarse) { .stick { display: block; } .help { display: none; } }
+
+.loading { position: absolute; inset: 0; display: grid; place-items: center; font: 500 13px var(--font-mono); color: var(--muted); }
+
+.cam { position: relative; border-radius: 6px; overflow: hidden; background: #0b0d0c; aspect-ratio: 4 / 3; max-width: 100%; }
+.cam canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.cam .reticle { position: absolute; inset: 0; pointer-events: none; }
+.cam .label { position: absolute; left: 6px; top: 6px; font: 500 10px var(--font-mono); color: #e8ece6; letter-spacing: .04em; background: rgba(8, 10, 9, .62); padding: 2px 6px; border-radius: 3px; }
+.cam .range { position: absolute; right: 6px; bottom: 6px; font: 500 15px var(--font-mono); color: #ffb08a; background: rgba(8, 10, 9, .62); padding: 1px 7px; border-radius: 3px; font-variant-numeric: tabular-nums; }
+.cam.nir canvas.feed { filter: grayscale(1) sepia(.35) hue-rotate(55deg) saturate(1.6) contrast(1.15) brightness(1.15); }
+
+table.targets { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.targets th { font: 600 10px var(--font-display); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); text-align: right; padding: 0 0 6px; }
+.targets th:first-child, .targets td:first-child { text-align: left; }
+.targets td { font: 12px var(--font-mono); text-align: right; padding: 5px 0; border-top: 1px solid var(--line); }
+.targets tr { cursor: pointer; }
+.targets tr.sel td { color: var(--teal); }
+.targets .cls { display: inline-flex; align-items: center; gap: 6px; }
+.targets .cls::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--muted); }
+.targets .cls.person::before { background: var(--amber); }
+.targets .cls.drone::before { background: var(--laser); }
+.targets .cls.vehicle::before { background: var(--teal); }
+.empty { color: var(--muted); font-size: 12px; }
+
+ol.events { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 190px; overflow-y: auto; }
+.events li { display: grid; grid-template-columns: 46px 1fr; gap: 8px; font-size: 12px; }
+.events time { font: 11px var(--font-mono); color: var(--muted); }
+.events li.drone span { color: var(--laser); }
+.events li.zone span { color: var(--amber); }
+
+.legs { display: grid; grid-template-columns: 112px 1fr; gap: 12px; align-items: start; }
+.legs svg { width: 112px; height: auto; }
+.legs svg .body { fill: var(--panel-2); stroke: var(--muted); }
+.legs svg .foot { fill: var(--panel); stroke: var(--muted); stroke-width: 1.5; }
+.legs svg .foot.on { fill: var(--teal); stroke: var(--teal); }
+.legs svg .leg { stroke: var(--line); stroke-width: 2; }
+.legs svg text { font: 9px var(--font-mono); fill: var(--muted); }
+table.joints { border-collapse: collapse; width: 100%; font: 11px var(--font-mono); font-variant-numeric: tabular-nums; }
+.joints th { color: var(--muted); font-weight: 500; text-align: right; padding: 0 0 3px; }
+.joints td { text-align: right; padding: 1px 0; }
+.joints td:first-child, .joints th:first-child { text-align: left; color: var(--muted); }
+
+.tabs { display: none; }
+
+@media (max-width: 1099px) {
+  body { overflow: auto; }
+  .app {
+    height: auto; min-height: 100%; grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 58vh auto auto; grid-template-areas: "view" "tabs" "sheet";
+  }
+  .view { height: 58vh; }
+  .tabs { grid-area: tabs; display: grid; grid-auto-flow: column; background: var(--panel); padding: 8px 16px 0; gap: 6px; }
+  .tabs button { border: 0; border-bottom: 2px solid transparent; background: none; padding: 8px 4px; font: 600 12px var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); cursor: pointer; }
+  .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--laser); }
+  .rail.left, .rail.right { grid-area: sheet; overflow: visible; }
+  .rail[data-hidden="true"] { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+
+<div class="app" id="app">
+  <aside class="rail left" id="rail-left" aria-label="Robot controls">
+    <div class="brand">
+      <h1>Hexabot Scout</h1>
+      <small>ROS 2 gait · v0.1</small>
+    </div>
+
+    <section aria-labelledby="h-drive">
+      <h2 id="h-drive">Drive <span class="tag" id="speed-tag">0.00 m/s</span></h2>
+      <div class="seg" role="group" aria-label="Gait" id="gait-seg">
+        <button type="button" data-gait="tripod" aria-pressed="true">Tripod</button>
+        <button type="button" data-gait="ripple" aria-pressed="false">Ripple</button>
+        <button type="button" data-gait="wave" aria-pressed="false">Wave</button>
+      </div>
+      <div style="height:10px"></div>
+      <div class="row"><label for="in-height">Body height</label><input id="in-height" type="range" min="55" max="150" step="1" value="100"><output id="out-height">100 mm</output></div>
+      <div class="row"><label for="in-step">Step height</label><input id="in-step" type="range" min="10" max="80" step="1" value="45"><output id="out-step">45 mm</output></div>
+      <div class="row"><label for="in-speed">Speed limit</label><input id="in-speed" type="range" min="10" max="100" step="5" value="70"><output id="out-speed">70 %</output></div>
+      <div style="height:10px"></div>
+      <div class="toggles">
+        <button type="button" class="btn" id="btn-patrol" aria-pressed="true">Patrol <span class="key">P</span></button>
+        <button type="button" class="btn" id="btn-crouch" aria-pressed="false">Crouch <span class="key">C</span></button>
+        <button type="button" class="btn" id="btn-autostep" aria-pressed="true">Auto step <span class="key">G</span></button>
+        <button type="button" class="btn" id="btn-follow" aria-pressed="true">Follow cam <span class="key">F</span></button>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-env">
+      <h2 id="h-env">Scene</h2>
+      <div class="seg" role="group" aria-label="Time of day" id="tod-seg">
+        <button type="button" data-tod="day" aria-pressed="true">Day</button>
+        <button type="button" data-tod="night" aria-pressed="false">Night <span class="key" style="font:10px var(--font-mono)">N</span></button>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-ill">
+      <h2 id="h-ill">IR illuminator <span class="tag" id="ill-tag">off</span></h2>
+      <div class="toggles" style="grid-template-columns:1fr">
+        <button type="button" class="btn" id="btn-ill" aria-pressed="false">Laser power <span class="key">L</span></button>
+      </div>
+      <div style="height:8px"></div>
+      <div class="row"><label for="in-bright">Brightness</label><input id="in-bright" type="range" min="0" max="255" step="1" value="200"><output id="out-bright">200</output></div>
+      <div class="row"><label for="in-spot">Spot angle</label><input id="in-spot" type="range" min="1.8" max="71" step="0.1" value="12"><output id="out-spot">12.0°</output></div>
+      <div style="height:8px"></div>
+      <div class="packet" id="ill-packet" aria-label="UART packet sent to the illuminator"></div>
+    </section>
+
+    <section aria-labelledby="h-lrf">
+      <h2 id="h-lrf">Laser rangefinder <span class="tag">1535 nm · 15–4200 m</span></h2>
+      <div class="seg" role="group" aria-label="Target selection" id="lrf-seg">
+        <button type="button" data-mode="1" aria-pressed="true">First</button>
+        <button type="button" data-mode="2" aria-pressed="false">Last</button>
+        <button type="button" data-mode="3" aria-pressed="false">Multi</button>
+      </div>
+      <div style="height:8px"></div>
+      <div class="toggles">
+        <button type="button" class="btn fire" id="btn-fire">Measure · Space</button>
+        <button type="button" class="btn" id="btn-autotrack" aria-pressed="true">Auto-track <span class="key">T</span></button>
+      </div>
+      <div style="height:8px"></div>
+      <div class="packet" id="lrf-packet" aria-label="Last UART exchange with the rangefinder"></div>
+    </section>
+  </aside>
+
+  <main class="view" id="view">
+    <canvas class="main" id="main-canvas" aria-label="3D view of the robot on the test range"></canvas>
+    <div class="hud" id="hud"></div>
+    <div class="help"><b>W A S D</b> move · <b>Q E</b> turn · <b>Space</b> range · <b>1 2 3</b> gait · <b>N</b> night · <b>V</b> camera mode · drag to orbit</div>
+    <div class="stick" id="stick" aria-label="Touch joystick"></div>
+    <div class="loading" id="loading">Loading the robot model…</div>
+  </main>
+
+  <nav class="tabs" role="tablist" aria-label="Panels">
+    <button type="button" role="tab" aria-selected="true" data-tab="left">Controls</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="right">Sensors</button>
+  </nav>
+
+  <aside class="rail right" id="rail-right" aria-label="Sensors and analytics">
+    <section aria-labelledby="h-cam">
+      <h2 id="h-cam">Head camera <span class="tag" id="cam-tag">low-light · HFOV 26°</span></h2>
+      <div class="seg" role="group" aria-label="Camera mode" id="cam-seg">
+        <button type="button" data-cam="color" aria-pressed="true">Color</button>
+        <button type="button" data-cam="nir" aria-pressed="false">Night IR</button>
+        <button type="button" data-cam="thermal" aria-pressed="false">Thermal</button>
+      </div>
+      <div style="height:8px"></div>
+      <div class="cam" id="cam">
+        <canvas class="feed" id="cam-canvas" width="320" height="240"></canvas>
+        <canvas class="overlay" id="cam-overlay" width="640" height="480"></canvas>
+        <div class="label" id="cam-label">LOW-LIGHT · IMX462</div>
+        <div class="range" id="cam-range">— m</div>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-targets">
+      <h2 id="h-targets">Targets <span class="tag" id="targets-tag">0 tracked</span></h2>
+      <table class="targets" id="targets">
+        <thead><tr><th>Track</th><th>Range</th><th>Bearing</th><th>Elev</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="empty" id="targets-empty">Nothing detected yet. Patrol mode scans with the head.</p>
+    </section>
+
+    <section aria-labelledby="h-events">
+      <h2 id="h-events">Analytics events</h2>
+      <ol class="events" id="events"></ol>
+    </section>
+
+    <section aria-labelledby="h-legs">
+      <h2 id="h-legs">Legs <span class="tag" id="phase-tag">phase 0.00</span></h2>
+      <div class="legs">
+        <svg viewBox="-60 -70 120 140" id="legs-svg" aria-label="Feet on the ground"></svg>
+        <table class="joints" id="joints"><thead><tr><th>leg</th><th>coxa</th><th>femur</th><th>tibia</th></tr></thead><tbody></tbody></table>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-state">
+      <h2 id="h-state">Telemetry</h2>
+      <dl class="kv" id="telemetry"></dl>
+    </section>
+  </aside>
+</div>
+
+<script type="module" src="src/app.js"></script>

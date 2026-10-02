@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- Pan-tilt head.  head_tilt_link +X is the common boresight of the laser
+       rangefinder, the cameras and the IR illuminator. -->
+  <xacro:macro name="head">
+    <xacro:property name="p" value="${geo['head_pan_xyz']}"/>
+    <joint name="head_pan_joint" type="revolute">
+      <parent link="base_link"/>
+      <child link="head_pan_link"/>
+      <origin xyz="${p[0]} ${p[1]} ${p[2]}"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${geo['head_pan_limits'][0]}" upper="${geo['head_pan_limits'][1]}" effort="2.9" velocity="4.7"/>
+      <dynamics damping="0.02" friction="0.01"/>
+    </joint>
+    <link name="head_pan_link">
+      <xacro:mesh_visual name="head_pan_printed" material="accent"/>
+      <xacro:mesh_visual name="head_pan_servo" material="servo"/>
+      <collision>
+        <origin xyz="0 -0.015 0.03"/>
+        <geometry><box size="0.06 0.13 0.06"/></geometry>
+      </collision>
+      <xacro:box_inertial mass="${geo['mass_head_pan']}" x="0.06" y="0.12" z="0.05" oz="0.025"/>
+    </link>
+
+    <joint name="head_tilt_joint" type="revolute">
+      <parent link="head_pan_link"/>
+      <child link="head_tilt_link"/>
+      <origin xyz="0 0 ${geo['head_tilt_height']}"/>
+      <axis xyz="0 -1 0"/>
+      <limit lower="${geo['head_tilt_limits'][0]}" upper="${geo['head_tilt_limits'][1]}" effort="2.9" velocity="4.7"/>
+      <dynamics damping="0.02" friction="0.01"/>
+    </joint>
+    <link name="head_tilt_link">
+      <xacro:mesh_visual name="head_tilt_printed" material="accent"/>
+      <xacro:mesh_visual name="head_tilt_payload" material="payload"/>
+      <collision>
+        <origin xyz="0.016 0 0.012"/>
+        <geometry><box size="0.07 0.1 0.07"/></geometry>
+      </collision>
+      <xacro:box_inertial mass="${geo['mass_head_tilt']}" x="0.07" y="0.1" z="0.07" ox="0.016" oz="0.012"/>
+    </link>
+
+    <xacro:property name="lrf" value="${geo['payload_lrf_xyz']}"/>
+    <joint name="lrf_joint" type="fixed">
+      <parent link="head_tilt_link"/>
+      <child link="lrf_link"/>
+      <origin xyz="${lrf[0] + 0.024} ${lrf[1]} ${lrf[2]}"/>
+    </joint>
+    <link name="lrf_link"/>
+
+    <xacro:property name="ll" value="${geo['payload_lowlight_xyz']}"/>
+    <joint name="lowlight_camera_joint" type="fixed">
+      <parent link="head_tilt_link"/>
+      <child link="lowlight_camera_link"/>
+      <origin xyz="${ll[0] + 0.02} ${ll[1]} ${ll[2]}"/>
+    </joint>
+    <link name="lowlight_camera_link"/>
+    <xacro:optical_frame parent="lowlight_camera_link"/>
+
+    <xacro:property name="th" value="${geo['payload_thermal_xyz']}"/>
+    <joint name="thermal_camera_joint" type="fixed">
+      <parent link="head_tilt_link"/>
+      <child link="thermal_camera_link"/>
+      <origin xyz="${th[0] + 0.016} ${th[1]} ${th[2]}"/>
+    </joint>
+    <link name="thermal_camera_link"/>
+    <xacro:optical_frame parent="thermal_camera_link"/>
+
+    <xacro:property name="il" value="${geo['payload_illuminator_xyz']}"/>
+    <joint name="illuminator_joint" type="fixed">
+      <parent link="head_tilt_link"/>
+      <child link="illuminator_link"/>
+      <origin xyz="${il[0] + 0.035} ${il[1]} ${il[2]}"/>
+    </joint>
+    <link name="illuminator_link"/>
+  </xacro:macro>
+</robot>

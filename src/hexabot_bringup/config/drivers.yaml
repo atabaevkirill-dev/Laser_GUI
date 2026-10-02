@@ -1,0 +1,29 @@
+# Device drivers on the real robot.  Serial ports: see docs/wiring.md (udev rules
+# create the /dev/hexabot/* names).
+lrf:
+  ros__parameters:
+    port: /dev/hexabot/lrf
+    baudrate: 115200
+    frame_id: lrf_link
+    target_mode: first
+    min_gate_m: 15
+    frequency_hz: 5
+    self_check_period: 10.0
+
+illuminator:
+  ros__parameters:
+    transport: tcp          # tcp | serial | sim
+    host: 192.168.0.7
+    tcp_port: 20108
+    serial_port: /dev/hexabot/illuminator
+    baudrate: 9600
+    address: 1
+    auto_night: true
+    night_brightness: 200
+    spot_follows_camera: true
+
+thermal_camera:
+  ros__parameters:
+    device: /dev/hexabot/thermal
+    frame_id: thermal_camera_link_optical_frame
+    rate: 25.0

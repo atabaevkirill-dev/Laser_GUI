@@ -1,0 +1,30 @@
+# colcon workspace artefacts
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+
+# CAD: STEP files are large, regenerate with `python cad/hexabot_cad.py --step`
+cad/step/
+
+# Perception models (download / convert locally, see docs/perception.md)
+*.onnx
+*.rknn
+*.pt
+
+# Runtime data
+recordings/
+*.db3
+*.mcap
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+sim/web/dist/

@@ -1,0 +1,12 @@
+# Point the head at a tracked target and measure its range with the LRF.
+int32 track_id
+float32 timeout
+---
+bool success
+string message
+hexabot_interfaces/TargetReport report
+---
+# slewing | tracking | ranging
+string stage
+float32 pixel_error
+int32 track_id

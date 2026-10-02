@@ -1,0 +1,7 @@
+<library path="hexabot_hardware">
+  <class name="hexabot_hardware/Sts3215System"
+         type="hexabot_hardware::Sts3215System"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>Feetech STS3215 serial bus servos (SYNC READ / SYNC WRITE).</description>
+  </class>
+</library>

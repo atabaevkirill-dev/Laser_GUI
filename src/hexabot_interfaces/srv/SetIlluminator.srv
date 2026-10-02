@@ -1,0 +1,9 @@
+bool power
+# 0..255
+uint8 brightness
+# 1.8..71 degrees, negative leaves the spot angle unchanged
+float32 spot_angle_deg
+---
+bool success
+string message
+hexabot_interfaces/IlluminatorState state

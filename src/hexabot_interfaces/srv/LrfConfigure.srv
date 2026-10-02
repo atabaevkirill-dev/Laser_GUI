@@ -1,0 +1,8 @@
+# Zero leaves a value unchanged.
+uint8 target_mode
+uint16 min_gate_m
+uint16 max_gate_m
+uint8 frequency_hz
+---
+bool success
+string message

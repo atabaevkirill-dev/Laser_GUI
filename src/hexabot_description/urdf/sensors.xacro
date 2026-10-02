@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="body_sensors">
+    <xacro:property name="lid" value="${geo['lidar_xyz']}"/>
+    <joint name="laser_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="laser_link"/>
+      <origin xyz="${lid[0]} ${lid[1]} ${lid[2]}"/>
+    </joint>
+    <link name="laser_link"/>
+
+    <xacro:property name="dc" value="${geo['depth_camera_xyz']}"/>
+    <joint name="depth_camera_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="depth_camera_link"/>
+      <origin xyz="${dc[0]} ${dc[1]} ${dc[2]}" rpy="0 ${geo['depth_camera_pitch']} 0"/>
+    </joint>
+    <link name="depth_camera_link"/>
+    <joint name="depth_camera_color_joint" type="fixed">
+      <parent link="depth_camera_link"/>
+      <child link="depth_camera_color_frame"/>
+      <origin xyz="0 0 0"/>
+    </joint>
+    <link name="depth_camera_color_frame"/>
+    <xacro:optical_frame parent="depth_camera_color_frame"/>
+
+    <!-- IMU of the depth camera (Gemini 336 / OAK-D Pro W). -->
+    <joint name="imu_joint" type="fixed">
+      <parent link="depth_camera_link"/>
+      <child link="imu_link"/>
+      <origin xyz="-0.01 0 0" rpy="0 ${-geo['depth_camera_pitch']} 0"/>
+    </joint>
+    <link name="imu_link"/>
+
+    <xacro:property name="gn" value="${geo['gnss_xyz']}"/>
+    <joint name="gnss_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="gnss_link"/>
+      <origin xyz="${gn[0]} ${gn[1]} ${gn[2]}"/>
+    </joint>
+    <link name="gnss_link"/>
+  </xacro:macro>
+</robot>
